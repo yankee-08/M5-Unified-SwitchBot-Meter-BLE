@@ -228,58 +228,50 @@ void loop()
     else
     {
       Serial.println("Device Found");
-      if (device.haveServiceData())
+      if (device.haveManufacturerData())
       {
-        char *pHexService = BLEUtils::buildHexData(nullptr, (uint8_t *)device.getServiceData().data(), device.getServiceData().length());
-        std::string service_data = pHexService;
-        // Serial.print("service_data:");
-        // Serial.println((service_data.c_str()));
+        char *pHexService = BLEUtils::buildHexData(nullptr, (uint8_t *)device.getManufacturerData().data(), device.getManufacturerData().length());
+        std::string manufacture_data = pHexService;
+        // Serial.print("manufacture_data:");
+        // Serial.println((manufacture_data.c_str()));
 
         // 8bitごとに数値に変換する
-        String full_str = service_data.c_str();
-        String split_str[6] = {"", "", "", "", "", ""};
-        uint32_t split_num[6] = {0, 0, 0, 0, 0, 0};
+        String full_str = manufacture_data.c_str();
+        String split_str[19] = {"", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""};
+        uint32_t split_num[19] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
         char *endptr;
-        for (int i = 0; i < 6; ++i)
+        for (int i = 0; i < 19; ++i)
         {
           split_str[i] = full_str.substring(i * 2, (i + 1) * 2);
           // Serial.println(split_str[i]);
           split_num[i] = strtoul(split_str[i].c_str(), &endptr, 16);
         }
         free(pHexService);
-
         // 温度算出
         const uint32_t mask_temp_sign = 0x80;    // 128
         const uint32_t mask_temp_integer = 0x7F; // 127
         const uint32_t mask_temp_decimal = 0x0F; // 15
-        integer_part_temperature = split_num[4] & mask_temp_integer;
-        decimal_part_temperature = split_num[3] & mask_temp_decimal;
+        integer_part_temperature = split_num[16] & mask_temp_integer;
+        decimal_part_temperature = split_num[15] & mask_temp_decimal;
         temperature = (double)integer_part_temperature + (double)decimal_part_temperature / 10;
-        if ((split_num[4] & mask_temp_sign) == 0)
+        if ((split_num[16] & mask_temp_sign) == 0)
         {
           temperature = temperature * -1;
         }
         Serial.print("Temp.:");
-        Serial.print(integer_part_temperature);
-        Serial.print(".");
-        Serial.print(decimal_part_temperature);
-        Serial.print("[`C] / ");
+        // Serial.print(integer_part_temperature);
+        // Serial.print(".");
+        // Serial.print(decimal_part_temperature);
+        // Serial.print("[`C] / ");
         Serial.print(temperature);
         Serial.println("[`C] / ");
 
         // 湿度算出
         const uint32_t mask_humi = 0x7F; // 127
-        humidity = split_num[5] & mask_humi;
+        humidity = split_num[17] & mask_humi;
         Serial.print("Humi.:");
         Serial.print(humidity);
-        Serial.print("[%RH] / ");
-
-        // 電池残量
-        const uint32_t mask_battery = 0x7F; // 127
-        battery_level = split_num[2] & mask_battery;
-        Serial.print("Batt Level:");
-        Serial.print(battery_level);
-        Serial.println("[%]");
+        Serial.println("[%RH]");
         Serial.flush();
       }
       else
